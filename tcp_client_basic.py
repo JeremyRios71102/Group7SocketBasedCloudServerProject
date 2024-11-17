@@ -80,7 +80,7 @@ def get_file(client_tcp, filename, save_dir='downloaded_files'):
         print(f'Server response: {response}')
 
 def setup_connection():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_tcp:
+        client_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_tcp.connect((HOST, PORT))
         return client_tcp
 
