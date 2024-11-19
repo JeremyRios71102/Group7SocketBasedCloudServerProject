@@ -1,8 +1,10 @@
 import socket
 import os
+from tqdm import tqdm
 
 # Client Configuration
-HOST = '35.223.27.14'  # Replace with your server's IP address
+# HOST = '34.123.199.76'  # Replace with your server's IP address
+HOST = '10.128.0.2'
 PORT = 3300
 BUFFER_SIZE = 4096
 
@@ -28,12 +30,13 @@ def send_file(client_tcp, filepath):
         return
 
     # Send the file data
-    with open(filepath, 'rb') as f:
+    with open(filepath, 'rb') as f, tqdm(desc=f'Sending {filename}', total=filesize) as pb:
         while True:
             bytes_read = f.read(BUFFER_SIZE)
             if not bytes_read:
                 break
             client_tcp.sendall(bytes_read)
+            pb.update(len(bytes_read))
     print(f'[*] Sent file {filename} to the server.')
 
     # Receive confirmation
@@ -48,7 +51,11 @@ def get_file(client_tcp, filename, save_dir='downloaded_files'):
     client_tcp.send(send_command.encode('utf-8'))
 
     # Receive server response
-    response = client_tcp.recv(BUFFER_SIZE).decode('utf-8')
+    try :
+        response = client_tcp.recv(BUFFER_SIZE).decode('utf-8')
+    except :
+        print('Error: Server took too long to respond.')
+        return
     if response.startswith('FILE'):
         _, filesize_str = response.split()
         try:
@@ -60,13 +67,15 @@ def get_file(client_tcp, filename, save_dir='downloaded_files'):
         # Acknowledge readiness to receive the file
         client_tcp.send('READY'.encode('utf-8'))
 
-        # Receive the file data
-        file_data = b''
-        while len(file_data) < filesize:
-            packet = client_tcp.recv(BUFFER_SIZE)
-            if not packet:
-                break
-            file_data += packet
+        with tqdm(desc=f'Receiving {filename}', total=filesize) as pb:
+            # Receive the file data
+            file_data = b''
+            while len(file_data) < filesize:
+                packet = client_tcp.recv(BUFFER_SIZE)
+                if not packet:
+                    break
+                file_data += packet
+                pb.update(len(packet))
 
         # Save the file
         file_path = os.path.join(save_dir, filename)
