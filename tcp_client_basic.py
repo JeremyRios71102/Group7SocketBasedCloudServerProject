@@ -99,7 +99,8 @@ if __name__ == '__main__':
     print('2. sendfile <filepath>   - Send a text file to the server.')
     print('3. getfile <filename>    - Get a file from the server.')
     print('4. q                     - Quit.')
-
+    print('5. delete <filepath>     - Deletes file stored in server.')
+    
     while True:
         user_input = input('Enter command: ').strip()
         if user_input == 'q':
@@ -136,5 +137,13 @@ if __name__ == '__main__':
             except Exception as e:
                 print(f'Error: {e}')
 
+        elif command == 'delete' and len(parts == 2:
+            filename = parts[1]
+            try:
+                with setup_connection() as client_tcp:
+                    delete_file(client_tcp, filename)
+            except Exception as e:
+                print(f'Error: {e}')
+        
         else:
             print('Invalid command or missing arguments.')
