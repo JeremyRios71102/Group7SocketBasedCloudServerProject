@@ -108,5 +108,15 @@ def start_server():
             client_thread.start()
             print(f'[*] Started thread for {addr[0]}:{addr[1]}')
 
+def delete_from_server(filename):
+    filepath = os.path.join(SERVER_DIRECTORY, filename)
+    
+    if os.path.exists(filepath):
+        os.remove(filepath)
+        response = print(f"File {filename} has been deleted")
+    else
+        response = print(f"Error, file {filepath} not found")
+    return response
+
 if __name__ == '__main__':
     start_server()
