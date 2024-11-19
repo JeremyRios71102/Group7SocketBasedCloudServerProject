@@ -2,6 +2,7 @@
 import socket
 import threading
 import os
+from tqdm import tqdm
 
 # Server Configuration
 HOST = '10.128.0.2'  # Replace with your server's IP address
@@ -42,12 +43,15 @@ def handle_client(connection, addr):
                 connection.send('READY'.encode('utf-8'))
 
                 # Receive the file data
+                progress_bar_r = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Receiving {filename}')
                 file_data = b''
                 while len(file_data) < filesize:
                     packet = connection.recv(BUFFER_SIZE)
                     if not packet:
                         break
                     file_data += packet
+                    progress_bar_r.update(len(packet))
+                progress_bar_r.close()
 
                 # Save the file
                 file_path = os.path.join(RECEIVED_FILES_DIR, f'{addr[0]}_{filename}')
@@ -78,12 +82,15 @@ def handle_client(connection, addr):
                     continue
 
                 # Send the file data
+                progress_bar_s = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Sending {filename}')
                 with open(file_path, 'rb') as f:
                     while True:
                         bytes_read = f.read(BUFFER_SIZE)
                         if not bytes_read:
                             break
                         connection.sendall(bytes_read)
+                        progress_bar_s.update(len(bytes_read))
+                    progress_bar_s.close()
                 print(f'[*] Sent file {filename} to {addr[0]}:{addr[1]}')
 
             else:
@@ -110,4 +117,3 @@ def start_server():
 
 if __name__ == '__main__':
     start_server()
-    
