@@ -114,7 +114,7 @@ def delete_from_server(filename):
     if os.path.exists(filepath):
         os.remove(filepath)
         response = print(f"File {filename} has been deleted")
-    else
+    else:
         response = print(f"Error, file {filepath} not found")
     return response
 
