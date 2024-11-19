@@ -2,7 +2,7 @@ import socket
 import os
 
 # Client Configuration
-HOST = '35.223.27.14'  # Replace with your server's IP address
+HOST = '10.128.0.2'  # Replace with your server's IP address
 PORT = 3300
 BUFFER_SIZE = 4096
 
