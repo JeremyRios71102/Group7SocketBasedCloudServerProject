@@ -88,9 +88,7 @@ def delete_file(client_tcp, filename):
     deleteFile = f'DELETE{filename}'
     client_tcp.send(deleteFile.encode('utf-8'))
     response = client_tcp.recv(BUFFER_SIZE).decode('utf-8')
-    print(-f"Server response: {response}")
-    return
-
+    print(f"Server response: {response}")
     
 
 
