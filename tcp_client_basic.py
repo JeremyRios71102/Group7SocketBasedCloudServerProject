@@ -84,6 +84,16 @@ def setup_connection():
         client_tcp.connect((HOST, PORT))
         return client_tcp
 
+def delete_file(client_tcp, filename):
+    deleteFile = f'DELETE{filename}'
+    client_tcp.send(deleteFile.encode('utf-8'))
+    response = client_tcp.recv(BUFFER_SIZE).decode('utf-8')
+    print(-f"Server response: {response}")
+    return
+
+    
+
+
 if __name__ == '__main__':
     print('TCP Client')
     print('Commands:')
