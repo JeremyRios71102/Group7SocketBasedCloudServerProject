@@ -3,7 +3,7 @@ import socket
 import threading
 import os
 from tqdm import tqdm
-from network_analysis import NetworkMetrics as nm
+import json
 
 # Server Configuration
 HOST = '10.128.0.2'  # Replace with your server's IP address
@@ -14,6 +14,20 @@ DASHES = '----> '
 # Directory to save received files
 RECEIVED_FILES_DIR = 'received_files'
 os.makedirs(RECEIVED_FILES_DIR, exist_ok=True)
+
+
+json_file = 'file_counters.json'
+def read_counters() :
+    with open(json_file, 'r') as f :
+        counters = json.load(f)
+    return counters
+
+def update_counter(counter_name) :
+    counters = read_counters()
+    counters[counter_name] += 1
+    
+    with open(json_file, 'w') as f :
+        json.dump(counters, f, indent=4)
 
 def handle_client(connection, addr):
     print(f'[*] Established connection from IP {addr[0]} port: {addr[1]}')
@@ -41,27 +55,42 @@ def handle_client(connection, addr):
                     connection.send('Invalid file size.'.encode('utf-8'))
                     continue
                 
-                file_path = os.path.join(RECEIVED_FILES_DIR, f'{addr[0]}_{filename}')
-                if os.path.exists(file_path) :
-                    connection.send(f'File {filename} already exists in the server.'.encode('utf-8'))
-                    connection.send('READY'.encode('utf-8'))
+                connection.send('READY'.encode('utf-8'))
+                
+                file_extension = os.path.splitext(filename)[1]
+                filename=''
+                # Cases for different file types to handle naming
+                counters = read_counters()
+                if file_extension == '.txt' :
+                    filename+=f'TS{str(counters['txt'])}'
+                    update_counter('txt')
+                elif file_extension == '.mp4' :
+                    filename+=f'VS{str(counters['mp4'])}'
+                    update_counter('mp4')
+                elif file_extension == '.wav' :
+                    filename+=f'AS{str(counters['wav'])}'
+                    update_counter('wav')
                 else :
-                    # Receive the file data
-                    progress_bar_r = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Receiving {filename}')
-                    file_data = b''
-                    while len(file_data) < filesize:
-                        packet = connection.recv(BUFFER_SIZE)
-                        if not packet:
-                            break
-                        file_data += packet
-                        progress_bar_r.update(len(packet))
-                    progress_bar_r.close()
+                    connection.send('Invalid file type.'.encode('utf-8'))
+                    continue
+                
+                file_path = os.path.join(RECEIVED_FILES_DIR, f'{addr[0]}_{filename}')
+                # Receive the file data
+                progress_bar_r = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Receiving {filename}')
+                file_data = b''
+                while len(file_data) < filesize:
+                    packet = connection.recv(BUFFER_SIZE)
+                    if not packet:
+                        break
+                    file_data += packet
+                    progress_bar_r.update(len(packet))
+                progress_bar_r.close()
 
-                    # Save the file
-                    with open(file_path, 'wb') as f:
-                        f.write(file_data)
-                    print(f'[*] Received file from {addr[0]}:{addr[1]} saved as {file_path}')
-                    connection.send(f'File {filename} received successfully.'.encode('utf-8'))
+                # Save the file
+                with open(file_path, 'wb') as f:
+                    f.write(file_data)
+                print(f'[*] Received file from {addr[0]}:{addr[1]} saved as {file_path}')
+                connection.send(f'File {filename} received successfully.'.encode('utf-8'))
 
             elif message.startswith('GET_FILE'):
                 # Protocol: GET_FILE filename
