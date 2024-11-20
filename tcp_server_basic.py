@@ -40,25 +40,24 @@ def handle_client(connection, addr):
                 except ValueError:
                     connection.send('Invalid file size.'.encode('utf-8'))
                     continue
-
-                connection.send('READY'.encode('utf-8'))
-
-                # Receive the file data
-                progress_bar_r = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Receiving {filename}')
-                file_data = b''
-                while len(file_data) < filesize:
-                    packet = connection.recv(BUFFER_SIZE)
-                    if not packet:
-                        break
-                    file_data += packet
-                    progress_bar_r.update(len(packet))
-                progress_bar_r.close()
-
-                # Save the file
+                
                 file_path = os.path.join(RECEIVED_FILES_DIR, f'{addr[0]}_{filename}')
                 if os.path.exists(file_path) :
                     connection.send(f'File {filename} already exists in the server.'.encode('utf-8'))
+                    connection.send('READY'.encode('utf-8'))
                 else :
+                    # Receive the file data
+                    progress_bar_r = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Receiving {filename}')
+                    file_data = b''
+                    while len(file_data) < filesize:
+                        packet = connection.recv(BUFFER_SIZE)
+                        if not packet:
+                            break
+                        file_data += packet
+                        progress_bar_r.update(len(packet))
+                    progress_bar_r.close()
+
+                    # Save the file
                     with open(file_path, 'wb') as f:
                         f.write(file_data)
                     print(f'[*] Received file from {addr[0]}:{addr[1]} saved as {file_path}')
