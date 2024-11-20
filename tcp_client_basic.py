@@ -1,6 +1,7 @@
 import socket
 import os
 from tqdm import tqdm
+from network_analysis import NetworkMetrics as nm
 
 # Client Configuration
 HOST = '10.128.0.2'  # Replace with your server's IP address

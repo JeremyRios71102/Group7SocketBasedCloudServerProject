@@ -3,6 +3,7 @@ import socket
 import threading
 import os
 from tqdm import tqdm
+from network_analysis import NetworkMetrics as nm
 
 # Server Configuration
 HOST = '10.128.0.2'  # Replace with your server's IP address
@@ -55,10 +56,13 @@ def handle_client(connection, addr):
 
                 # Save the file
                 file_path = os.path.join(RECEIVED_FILES_DIR, f'{addr[0]}_{filename}')
-                with open(file_path, 'wb') as f:
-                    f.write(file_data)
-                print(f'[*] Received file from {addr[0]}:{addr[1]} saved as {file_path}')
-                connection.send(f'File {filename} received successfully.'.encode('utf-8'))
+                if os.path.exists(file_path) :
+                    connection.send(f'File {filename} already exists in the server.'.encode('utf-8'))
+                else :
+                    with open(file_path, 'wb') as f:
+                        f.write(file_data)
+                    print(f'[*] Received file from {addr[0]}:{addr[1]} saved as {file_path}')
+                    connection.send(f'File {filename} received successfully.'.encode('utf-8'))
 
             elif message.startswith('GET_FILE'):
                 # Protocol: GET_FILE filename
