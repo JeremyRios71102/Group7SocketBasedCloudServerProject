@@ -57,26 +57,27 @@ def handle_client(connection, addr):
                 
                 connection.send('READY'.encode('utf-8'))
                 
+                c_filename = os.path.splitext(filename)[0]
                 file_extension = os.path.splitext(filename)[1]
-                filename=''
+                s_filename=''
                 # Cases for different file types to handle naming
                 counters = read_counters()
                 if file_extension == '.txt' :
-                    filename+=f'TS{str(counters['txt'])}'
+                    s_filename+='TS' + str(counters['txt'])
                     update_counter('txt')
                 elif file_extension == '.mp4' :
-                    filename+=f'VS{str(counters['mp4'])}'
+                    s_filename+='VS' + str(counters['mp4'])
                     update_counter('mp4')
                 elif file_extension == '.wav' :
-                    filename+=f'AS{str(counters['wav'])}'
+                    s_filename+='AS' + str(counters['wav'])
                     update_counter('wav')
                 else :
                     connection.send('Invalid file type.'.encode('utf-8'))
                     continue
                 
-                file_path = os.path.join(RECEIVED_FILES_DIR, f'{addr[0]}_{filename}')
+                file_path = os.path.join(RECEIVED_FILES_DIR, s_filename)
                 # Receive the file data
-                progress_bar_r = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Receiving {filename}')
+                progress_bar_r = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Receiving {c_filename}{file_extension}')
                 file_data = b''
                 while len(file_data) < filesize:
                     packet = connection.recv(BUFFER_SIZE)
@@ -89,8 +90,8 @@ def handle_client(connection, addr):
                 # Save the file
                 with open(file_path, 'wb') as f:
                     f.write(file_data)
-                print(f'[*] Received file from {addr[0]}:{addr[1]} saved as {file_path}')
-                connection.send(f'File {filename} received successfully.'.encode('utf-8'))
+                print(f'[*] Received {c_filename} from {addr[0]}:{addr[1]} - Saved as {s_filename} in {RECEIVED_FILES_DIR}.')
+                connection.send(f'{c_filename}{file_extension} received successfully. Saved as {s_filename}.'.encode('utf-8'))
 
             elif message.startswith('GET_FILE'):
                 # Protocol: GET_FILE filename

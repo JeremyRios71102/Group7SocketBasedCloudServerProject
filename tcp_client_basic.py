@@ -80,7 +80,7 @@ def get_file(client_tcp, filename, save_dir='downloaded_files'):
         file_path = os.path.join(save_dir, filename)
         with open(file_path, 'wb') as f:
             f.write(file_data)
-        print(f'[*] Received file saved as {file_path}')
+        print(f'[*] Received file saved as {filename} in {save_dir}.')
 
     elif response.startswith('ERROR'):
         print(f'Server error: {response}')
