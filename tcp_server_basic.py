@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import socket
 import threading
 import os
@@ -6,7 +5,7 @@ from tqdm import tqdm
 import json
 
 # Server Configuration
-HOST = '10.128.0.2'  # Replace with your server's IP address
+HOST = '10.128.0.2'  # Google Cloud VM internal IP address
 PORT = 3300
 BUFFER_SIZE = 4096
 DASHES = '----> '
@@ -15,17 +14,17 @@ DASHES = '----> '
 RECEIVED_FILES_DIR = 'received_files'
 os.makedirs(RECEIVED_FILES_DIR, exist_ok=True)
 
-
+# Counters file to keep track of saved files for file naming
 json_file = 'file_counters.json'
 def read_counters() :
     with open(json_file, 'r') as f :
         counters = json.load(f)
     return counters
 
+# Updates the counter in the counters file
 def update_counter(counter_name) :
     counters = read_counters()
     counters[counter_name] += 1
-    
     with open(json_file, 'w') as f :
         json.dump(counters, f, indent=4)
 
@@ -57,6 +56,7 @@ def handle_client(connection, addr):
                 
                 connection.send('READY'.encode('utf-8'))
                 
+                # Get the filename and extension from the client
                 c_filename = os.path.splitext(filename)[0]
                 file_extension = os.path.splitext(filename)[1]
                 s_filename=''
@@ -75,10 +75,13 @@ def handle_client(connection, addr):
                     connection.send('Invalid file type.'.encode('utf-8'))
                     continue
                 
+                # Create where the received file will be saved
                 file_path = os.path.join(RECEIVED_FILES_DIR, s_filename)
-                # Receive the file data
+                
+                # Receive the file data and show progress using the tqdm dependency
                 progress_bar_r = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Receiving {c_filename}{file_extension}')
                 file_data = b''
+                # Receive packets in a loop based on the number of bytes allowed in the buffer
                 while len(file_data) < filesize:
                     packet = connection.recv(BUFFER_SIZE)
                     if not packet:
@@ -87,7 +90,7 @@ def handle_client(connection, addr):
                     progress_bar_r.update(len(packet))
                 progress_bar_r.close()
 
-                # Save the file
+                # Save the file into the file path that was generated
                 with open(file_path, 'wb') as f:
                     f.write(file_data)
                 print(f'[*] Received {c_filename} from {addr[0]}:{addr[1]} - Saved as {s_filename} in {RECEIVED_FILES_DIR}.')
