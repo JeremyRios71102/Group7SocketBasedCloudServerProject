@@ -1,9 +1,11 @@
 import socket
 import os
+from tqdm import tqdm
+from network_analysis import NetworkMetrics as nm
 
 # Client Configuration
 HOST = '10.128.0.2'  # Replace with your server's IP address
-PORT = 3390
+PORT = 3300
 BUFFER_SIZE = 4096
 
 def send_message(message):
@@ -34,14 +36,17 @@ def send_file(filepath):
         if response != 'READY':
             print('Server not ready to receive file.')
             return
-
+        
         # Send the file data
         with open(filepath, 'rb') as f:
+            progress_bar = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Sending {filename}')
             while True:
                 bytes_read = f.read(BUFFER_SIZE)
                 if not bytes_read:
                     break
                 client_tcp.sendall(bytes_read)
+                progress_bar.update(len(bytes_read))
+            progress_bar.close()
         print(f'[*] Sent file {filename} to the server.')
 
         # Receive confirmation
@@ -75,18 +80,21 @@ def get_file(filename, save_dir='downloaded_files'):
             client_tcp.send('READY'.encode('utf-8'))
 
             # Receive the file data
+            progress_bar = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Receiving {filename}')
             file_data = b''
             while len(file_data) < filesize:
                 packet = client_tcp.recv(BUFFER_SIZE)
                 if not packet:
                     break
                 file_data += packet
+                progress_bar.update(len(packet))
+            progress_bar.close()
 
             # Save the file
             file_path = os.path.join(save_dir, filename)
             with open(file_path, 'wb') as f:
                 f.write(file_data)
-            print(f'[*] Received file saved as {file_path}')
+            print(f'[*] Received file saved as {filename} in {save_dir}.')
 
         elif response.startswith('ERROR'):
             print(f'Server error: {response}')

@@ -1,11 +1,12 @@
-#!/usr/bin/env python3
 import socket
 import threading
 import os
+from tqdm import tqdm
+import json
 
 # Server Configuration
-HOST = '10.128.0.2'  # Replace with your server's IP address
-PORT = 3390
+HOST = '10.128.0.2'  # Google Cloud VM internal IP address
+PORT = 3300
 BUFFER_SIZE = 4096
 DASHES = '----> '
 
@@ -15,6 +16,20 @@ os.makedirs(RECEIVED_FILES_DIR, exist_ok=True)
 
 # Lock for file operations to prevent concurrent access issues
 file_lock = threading.Lock()
+
+# Counters file to keep track of saved files for file naming
+json_file = 'file_counters.json'
+def read_counters() :
+    with open(json_file, 'r') as f :
+        counters = json.load(f)
+    return counters
+
+# Updates the counter in the counters file
+def update_counter(counter_name) :
+    counters = read_counters()
+    counters[counter_name] += 1
+    with open(json_file, 'w') as f :
+        json.dump(counters, f, indent=4)
 
 def handle_client(connection, addr):
     print(f'[*] Established connection from IP {addr[0]} port: {addr[1]}')
@@ -61,8 +76,42 @@ def handle_send_file(connection, addr, message):
     except ValueError:
         connection.send('Invalid file size.'.encode('utf-8'))
         return
-
+    
     connection.send('READY'.encode('utf-8'))
+    
+    # Get the filename and extension from the client
+    c_filename = os.path.splitext(filename)[0]
+    file_extension = os.path.splitext(filename)[1]
+    s_filename=''
+    # Cases for different file types to handle naming
+    counters = read_counters()
+    if file_extension == '.txt' :
+        s_filename+='TS' + str(counters['txt'])
+        update_counter('txt')
+    elif file_extension == '.mp4' :
+        s_filename+='VS' + str(counters['mp4'])
+        update_counter('mp4')
+    elif file_extension == '.wav' :
+        s_filename+='AS' + str(counters['wav'])
+        update_counter('wav')
+    else :
+        connection.send('Invalid file type.'.encode('utf-8'))
+        return
+    
+    # Create where the received file will be saved
+    file_path = os.path.join(RECEIVED_FILES_DIR, s_filename)
+    
+    # Receive the file data and show progress using the tqdm dependency
+    progress_bar_r = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Receiving {c_filename}{file_extension}')
+    file_data = b''
+    # Receive packets in a loop based on the number of bytes allowed in the buffer
+    while len(file_data) < filesize:
+        packet = connection.recv(BUFFER_SIZE)
+        if not packet:
+            break
+        file_data += packet
+        progress_bar_r.update(len(packet))
+    progress_bar_r.close()
 
     # Receive the file data
     file_data = b''
@@ -72,10 +121,8 @@ def handle_send_file(connection, addr, message):
             break
         file_data += packet
 
-    # Save the file with thread-safe operations
+    # Save the file
     with file_lock:
-        safe_filename = f"{addr[0].replace('.', '_')}_{filename}"
-        file_path = os.path.join(RECEIVED_FILES_DIR, safe_filename)
         with open(file_path, 'wb') as f:
             f.write(file_data)
     print(f'[*] Received file from {addr[0]}:{addr[1]} saved as {file_path}')
@@ -104,12 +151,15 @@ def handle_get_file(connection, addr, message):
 
     # Send the file data with thread-safe operations
     with file_lock:
+        progress_bar_s = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Sending {filename}')
         with open(file_path, 'rb') as f:
             while True:
                 bytes_read = f.read(BUFFER_SIZE)
                 if not bytes_read:
                     break
                 connection.sendall(bytes_read)
+                progress_bar_s.update(len(bytes_read))
+            progress_bar_s.close()
     print(f'[*] Sent file {filename} to {addr[0]}:{addr[1]}')
 
 def handle_delete_file(connection, addr, message):
