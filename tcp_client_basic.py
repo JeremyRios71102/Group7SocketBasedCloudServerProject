@@ -9,6 +9,18 @@ HOST = '10.128.0.2'  # Replace with your server's IP address
 PORT = 3300
 BUFFER_SIZE = 4096
 
+def print_nm(tic, toc, filename, filesize, send_command) :
+    # Calculating and printing the network metrics
+    metrics = NetworkMetrics()
+    time = round(toc - tic, 2)
+    megabyte = 1000000
+    speed = round((filesize/megabyte) / time, 2)
+    metrics.log_transfer(send_command, filename, filesize, time, speed)
+    print('\nNetwork Metrics:')
+    for metric in metrics.data_transfer_log[0] :
+        print(f'{metric} : {metrics.data_transfer_log[0][metric]}')
+    print()
+
 def send_message(message):
     client_tcp = setup_connection()
     try:
@@ -52,15 +64,8 @@ def send_file(filepath):
         toc = pc()
         print(f'[*] Sent file {filename} to the server.')
         
-        # Calculating and printing the network metrics
-        metrics = NetworkMetrics()
-        time = round(toc - tic, 2)
-        megabyte = 1000000
-        speed = (filesize/megabyte) / time
-        metrics.log_transfer(send_command, filename, filesize, time, speed)
-        print('Network Metrics:')
-        for metric in metrics.data_transfer_log[0] :
-            print(f'{metric} : {metrics.data_transfer_log[0][metric]}')
+        # Print network metrics
+        print_nm(tic, toc, filename, filesize, send_command)
 
         # Receive confirmation
         confirmation = client_tcp.recv(BUFFER_SIZE).decode('utf-8')
@@ -106,15 +111,8 @@ def get_file(filename, save_dir='downloaded_files'):
             progress_bar.close()
             toc = pc()
 
-            # Calculating and printing the network metrics
-            metrics = NetworkMetrics()
-            time = round(toc - tic, 2)
-            megabyte = 1000000
-            speed = (filesize/megabyte) / time
-            metrics.log_transfer(send_command, filename, filesize, time, speed)
-            print('Network Metrics:')
-            for metric in metrics.data_transfer_log[0] :
-                print(f'{metric} : {metrics.data_transfer_log[0][metric]}')
+            # Print network metrics
+            print_nm(tic, toc, filename, filesize, send_command)
 
             # Save the file
             file_path = os.path.join(save_dir, filename)

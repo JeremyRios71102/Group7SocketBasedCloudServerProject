@@ -33,6 +33,18 @@ def update_counter(counter_name) :
     with open(json_file, 'w') as f :
         json.dump(counters, f, indent=4)
 
+# Calculating and printing the network metrics
+def print_nm(tic, toc, filename, filesize, action) :
+    metrics = NetworkMetrics()
+    time = round(toc - tic, 2)
+    megabyte = 1000000
+    speed = round((filesize/megabyte) / time, 2)
+    metrics.log_transfer(action, filename, filesize, time, speed)
+    print('\nNetwork Metrics:')
+    for metric in metrics.data_transfer_log[0] :
+        print(f'{metric} : {metrics.data_transfer_log[0][metric]}')
+    print()
+
 def handle_client(connection, addr):
     print(f'[*] Established connection from IP {addr[0]} port: {addr[1]}')
     try:
@@ -124,15 +136,8 @@ def handle_send_file(connection, addr, message):
     print(f'[*] Received file from {addr[0]}:{addr[1]} saved as {file_path}')
     connection.send(f'File {filename} received successfully.'.encode('utf-8'))
 
-    # Calculating and printing the network metrics
-    metrics = NetworkMetrics()
-    time = round(toc - tic, 2)
-    megabyte = 1000000
-    speed = (filesize/megabyte) / time
-    metrics.log_transfer(action, filename, filesize, time, speed)
-    print('Network Metrics:')
-    for metric in metrics.data_transfer_log[0] :
-        print(f'{metric} : {metrics.data_transfer_log[0][metric]}')
+    # Print network metrics
+    print_nm(tic, toc, filename, filesize, action)
 
 def handle_get_file(connection, addr, message):
     # Protocol: GET_FILE filename
@@ -171,15 +176,8 @@ def handle_get_file(connection, addr, message):
 
     print(f'[*] Sent file {filename} to {addr[0]}:{addr[1]}')
 
-    # Calculating and printing the network metrics
-    metrics = NetworkMetrics()
-    time = round(toc - tic, 2)
-    megabyte = 1000000
-    speed = (filesize/megabyte) / time
-    metrics.log_transfer(action, filename, filesize, time, speed)
-    print('Network Metrics:')
-    for metric in metrics.data_transfer_log[0] :
-        print(f'{metric} : {metrics.data_transfer_log[0][metric]}')
+    # Print network metrics
+    print_nm(tic, toc, filename, filesize, action)
 
 def handle_delete_file(connection, addr, message):
     # Protocol: DELETE filename
