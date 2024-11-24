@@ -5,7 +5,7 @@ from tqdm import tqdm
 from network_analysis import NetworkMetrics
 
 # Client Configuration
-HOST = '10.128.0.2'  # Replace with your server's IP address
+HOST = '35.226.227.10'  # Replace with your server's IP address
 PORT = 3300
 BUFFER_SIZE = 4096
 
