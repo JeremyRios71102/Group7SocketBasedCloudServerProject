@@ -58,11 +58,14 @@ def send_file(filepath):
         megabyte = 1000000
         speed = (filesize/megabyte) / time
         metrics.log_transfer(send_command, filename, filesize, time, speed)
-        print(f'Network Metrics:\n{metrics.data_transfer_log}')
+        print('Network Metrics:')
+        for metric in metrics.data_transfer_log[0] :
+            print(f'{metric} : {metrics.data_transfer_log[0][metric]}')
 
         # Receive confirmation
         confirmation = client_tcp.recv(BUFFER_SIZE).decode('utf-8')
         print(f'Server response: {confirmation}')
+
     except Exception as e:
         print(f'Error: {e}')
     finally:
@@ -109,7 +112,9 @@ def get_file(filename, save_dir='downloaded_files'):
             megabyte = 1000000
             speed = (filesize/megabyte) / time
             metrics.log_transfer(send_command, filename, filesize, time, speed)
-            print(f'Network Metrics:\n{metrics.data_transfer_log}')
+            print('Network Metrics:')
+            for metric in metrics.data_transfer_log[0] :
+                print(f'{metric} : {metrics.data_transfer_log[0][metric]}')
 
             # Save the file
             file_path = os.path.join(save_dir, filename)

@@ -130,7 +130,9 @@ def handle_send_file(connection, addr, message):
     megabyte = 1000000
     speed = (filesize/megabyte) / time
     metrics.log_transfer(action, filename, filesize, time, speed)
-    print(f'Network Metrics:\n{metrics.data_transfer_log}')
+    print('Network Metrics:')
+    for metric in metrics.data_transfer_log[0] :
+        print(f'{metric} : {metrics.data_transfer_log[0][metric]}')
 
 def handle_get_file(connection, addr, message):
     # Protocol: GET_FILE filename
@@ -175,7 +177,9 @@ def handle_get_file(connection, addr, message):
     megabyte = 1000000
     speed = (filesize/megabyte) / time
     metrics.log_transfer(action, filename, filesize, time, speed)
-    print(f'Network Metrics:\n{metrics.data_transfer_log}')
+    print('Network Metrics:')
+    for metric in metrics.data_transfer_log[0] :
+        print(f'{metric} : {metrics.data_transfer_log[0][metric]}')
 
 def handle_delete_file(connection, addr, message):
     # Protocol: DELETE filename
