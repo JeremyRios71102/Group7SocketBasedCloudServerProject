@@ -1,0 +1,10 @@
+def generate_unique_filepath(filename, file_ext):
+  
+    #Generate file path by checking if a file with the same name already exists.
+
+    path = 'c:/DL/Others/%s%s' % (filename, file_ext)  # Initial path with base filename
+    uniq = 1
+    while os.path.exists(path):  # If the file already exists
+        path = 'c:/DL/Others/%s_%d%s' % (filename, uniq, file_ext)  # Append a unique number to filename
+        uniq += 1  # Increment the counter
+    return path
