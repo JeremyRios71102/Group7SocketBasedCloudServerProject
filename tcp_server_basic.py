@@ -51,7 +51,7 @@ def handle_client(connection, addr):
         while True:
             data = connection.recv(BUFFER_SIZE)
             if not data:
-                print(f'[*] Connection closed by {addr[0]}:{addr[1]}')
+                print(f'[*] Connection closed by {addr[0]}:{addr[1]}\n')
                 break
 
             # Decode the received data
