@@ -31,23 +31,23 @@ def send_file(filepath):
         send_command = f'SEND_FILE {filename} {filesize}'
         client_tcp.send(send_command.encode('utf-8'))
 
-    # Wait for server to be ready
-    response = client_tcp.recv(BUFFER_SIZE).decode('utf-8')
-    if response != 'READY':
-        print('Server not ready to receive file.')
-        return
-    
-    # Send the file data
-    with open(filepath, 'rb') as f:
-        progress_bar = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Sending {filename}')
-        while True:
-            bytes_read = f.read(BUFFER_SIZE)
-            if not bytes_read:
-                break
-            client_tcp.sendall(bytes_read)
-            progress_bar.update(len(bytes_read))
-        progress_bar.close()
-    print(f'[*] Sent file {filename} to the server.')
+        # Wait for server to be ready
+        response = client_tcp.recv(BUFFER_SIZE).decode('utf-8')
+        if response != 'READY':
+            print('Server not ready to receive file.')
+            return
+        
+        # Send the file data
+        with open(filepath, 'rb') as f:
+            progress_bar = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Sending {filename}')
+            while True:
+                bytes_read = f.read(BUFFER_SIZE)
+                if not bytes_read:
+                    break
+                client_tcp.sendall(bytes_read)
+                progress_bar.update(len(bytes_read))
+            progress_bar.close()
+        print(f'[*] Sent file {filename} to the server.')
 
         # Receive confirmation
         confirmation = client_tcp.recv(BUFFER_SIZE).decode('utf-8')
@@ -79,22 +79,22 @@ def get_file(filename, save_dir='downloaded_files'):
             # Acknowledge readiness to receive the file
             client_tcp.send('READY'.encode('utf-8'))
 
-        # Receive the file data
-        progress_bar = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Receiving {filename}')
-        file_data = b''
-        while len(file_data) < filesize:
-            packet = client_tcp.recv(BUFFER_SIZE)
-            if not packet:
-                break
-            file_data += packet
-            progress_bar.update(len(packet))
-        progress_bar.close()
+            # Receive the file data
+            progress_bar = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Receiving {filename}')
+            file_data = b''
+            while len(file_data) < filesize:
+                packet = client_tcp.recv(BUFFER_SIZE)
+                if not packet:
+                    break
+                file_data += packet
+                progress_bar.update(len(packet))
+            progress_bar.close()
 
-        # Save the file
-        file_path = os.path.join(save_dir, filename)
-        with open(file_path, 'wb') as f:
-            f.write(file_data)
-        print(f'[*] Received file saved as {filename} in {save_dir}.')
+            # Save the file
+            file_path = os.path.join(save_dir, filename)
+            with open(file_path, 'wb') as f:
+                f.write(file_data)
+            print(f'[*] Received file saved as {filename} in {save_dir}.')
 
         elif response.startswith('ERROR'):
             print(f'Server error: {response}')
