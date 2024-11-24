@@ -1,7 +1,8 @@
 import socket
 import os
+from time import perf_counter as pc
 from tqdm import tqdm
-from network_analysis import NetworkMetrics as nm
+from network_analysis import NetworkMetrics
 
 # Client Configuration
 HOST = '10.128.0.2'  # Replace with your server's IP address
@@ -38,6 +39,7 @@ def send_file(filepath):
             return
         
         # Send the file data
+        tic = pc()
         with open(filepath, 'rb') as f:
             progress_bar = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Sending {filename}')
             while True:
@@ -47,7 +49,16 @@ def send_file(filepath):
                 client_tcp.sendall(bytes_read)
                 progress_bar.update(len(bytes_read))
             progress_bar.close()
+        toc = pc()
         print(f'[*] Sent file {filename} to the server.')
+        
+        # Calculating and printing the network metrics
+        metrics = NetworkMetrics()
+        time = round(toc - tic, 2)
+        megabyte = 1000000
+        speed = (filesize/megabyte) / time
+        metrics.log_transfer(send_command, filename, filesize, time, speed)
+        print(f'Network Metrics:\n{metrics.data_transfer_log}')
 
         # Receive confirmation
         confirmation = client_tcp.recv(BUFFER_SIZE).decode('utf-8')
@@ -80,6 +91,7 @@ def get_file(filename, save_dir='downloaded_files'):
             client_tcp.send('READY'.encode('utf-8'))
 
             # Receive the file data
+            tic = pc()
             progress_bar = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Receiving {filename}')
             file_data = b''
             while len(file_data) < filesize:
@@ -89,6 +101,15 @@ def get_file(filename, save_dir='downloaded_files'):
                 file_data += packet
                 progress_bar.update(len(packet))
             progress_bar.close()
+            toc = pc()
+
+            # Calculating and printing the network metrics
+            metrics = NetworkMetrics()
+            time = round(toc - tic, 2)
+            megabyte = 1000000
+            speed = (filesize/megabyte) / time
+            metrics.log_transfer(send_command, filename, filesize, time, speed)
+            print(f'Network Metrics:\n{metrics.data_transfer_log}')
 
             # Save the file
             file_path = os.path.join(save_dir, filename)
