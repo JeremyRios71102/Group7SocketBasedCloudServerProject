@@ -1,6 +1,8 @@
 import socket
 import threading
 import os
+from time import perf_counter as pc
+from network_analysis import NetworkMetrics
 from tqdm import tqdm
 import json
 
@@ -30,6 +32,18 @@ def update_counter(counter_name) :
     counters[counter_name] += 1
     with open(json_file, 'w') as f :
         json.dump(counters, f, indent=4)
+
+# Calculating and printing the network metrics
+def print_nm(tic, toc, filename, filesize, action) :
+    metrics = NetworkMetrics()
+    time = round(toc - tic, 2)
+    megabyte = 1000000
+    speed = round((filesize/megabyte) / time, 2)
+    metrics.log_transfer(action, filename, filesize, time, speed)
+    print('\nNetwork Metrics:')
+    for metric in metrics.data_transfer_log[0] :
+        print(f'{metric} : {metrics.data_transfer_log[0][metric]}')
+    print()
 
 def handle_client(connection, addr):
     print(f'[*] Established connection from IP {addr[0]} port: {addr[1]}')
@@ -70,7 +84,7 @@ def handle_send_file(connection, addr, message):
         connection.send('Invalid SEND_FILE command format.'.encode('utf-8'))
         return
 
-    _, filename, filesize_str = parts
+    action, filename, filesize_str = parts
     try:
         filesize = int(filesize_str)
     except ValueError:
@@ -91,9 +105,9 @@ def handle_send_file(connection, addr, message):
     elif file_extension == '.mp4' :
         s_filename+='VS' + str(counters['mp4'])
         update_counter('mp4')
-    elif file_extension == '.wav' :
-        s_filename+='AS' + str(counters['wav'])
-        update_counter('wav')
+    elif file_extension == '.m4a' :
+        s_filename+='AS' + str(counters['m4a'])
+        update_counter('m4a')
     else :
         connection.send('Invalid file type.'.encode('utf-8'))
         return
@@ -102,6 +116,7 @@ def handle_send_file(connection, addr, message):
     file_path = os.path.join(RECEIVED_FILES_DIR, s_filename)
     
     # Receive the file data and show progress using the tqdm dependency
+    tic = pc()
     progress_bar_r = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Receiving {c_filename}{file_extension}')
     file_data = b''
     # Receive packets in a loop based on the number of bytes allowed in the buffer
@@ -112,6 +127,7 @@ def handle_send_file(connection, addr, message):
         file_data += packet
         progress_bar_r.update(len(packet))
     progress_bar_r.close()
+    toc = pc()
 
     # Save the file
     with file_lock:
@@ -120,6 +136,9 @@ def handle_send_file(connection, addr, message):
     print(f'[*] Received file from {addr[0]}:{addr[1]} saved as {file_path}')
     connection.send(f'File {filename} received successfully.'.encode('utf-8'))
 
+    # Print network metrics
+    print_nm(tic, toc, filename, filesize, action)
+
 def handle_get_file(connection, addr, message):
     # Protocol: GET_FILE filename
     parts = message.split()
@@ -127,7 +146,7 @@ def handle_get_file(connection, addr, message):
         connection.send('Invalid GET_FILE command format.'.encode('utf-8'))
         return
 
-    _, filename = parts
+    action, filename = parts
     file_path = os.path.join(RECEIVED_FILES_DIR, filename)
     if not os.path.exists(file_path):
         connection.send('ERROR: File does not exist.'.encode('utf-8'))
@@ -142,6 +161,7 @@ def handle_get_file(connection, addr, message):
         return
 
     # Send the file data with thread-safe operations
+    tic = pc()
     with file_lock:
         progress_bar_s = tqdm(total=filesize, unit='B', unit_scale=True, desc=f'Sending {filename}')
         with open(file_path, 'rb') as f:
@@ -152,7 +172,12 @@ def handle_get_file(connection, addr, message):
                 connection.sendall(bytes_read)
                 progress_bar_s.update(len(bytes_read))
             progress_bar_s.close()
+    toc = pc()
+
     print(f'[*] Sent file {filename} to {addr[0]}:{addr[1]}')
+
+    # Print network metrics
+    print_nm(tic, toc, filename, filesize, action)
 
 def handle_delete_file(connection, addr, message):
     # Protocol: DELETE filename
