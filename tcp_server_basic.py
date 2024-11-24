@@ -105,9 +105,9 @@ def handle_send_file(connection, addr, message):
     elif file_extension == '.mp4' :
         s_filename+='VS' + str(counters['mp4'])
         update_counter('mp4')
-    elif file_extension == '.wav' :
-        s_filename+='AS' + str(counters['wav'])
-        update_counter('wav')
+    elif file_extension == '.m4a' :
+        s_filename+='AS' + str(counters['m4a'])
+        update_counter('m4a')
     else :
         connection.send('Invalid file type.'.encode('utf-8'))
         return
