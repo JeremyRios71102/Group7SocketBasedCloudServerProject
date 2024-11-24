@@ -113,14 +113,6 @@ def handle_send_file(connection, addr, message):
         progress_bar_r.update(len(packet))
     progress_bar_r.close()
 
-    # Receive the file data
-    file_data = b''
-    while len(file_data) < filesize:
-        packet = connection.recv(BUFFER_SIZE)
-        if not packet:
-            break
-        file_data += packet
-
     # Save the file
     with file_lock:
         with open(file_path, 'wb') as f:
