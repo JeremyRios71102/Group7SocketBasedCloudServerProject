@@ -5,7 +5,7 @@ from tqdm import tqdm
 from network_analysis import NetworkMetrics
 
 # Client Configuration
-HOST = '35.226.227.10'  # Internal IP address from Google Cloud VM
+HOST = '35.223.173.77'  # External IP address from Google Cloud VM
 PORT = 3300
 BUFFER_SIZE = 4096
 
